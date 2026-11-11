@@ -1,0 +1,71 @@
+# Wildfire ViT TensorRT service on Kubernetes with NVIDIA GPU scheduling.
+# Requires the NVIDIA device plugin (or GPU Operator) so nodes advertise `nvidia.com/gpu`.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wildfire-vit
+  labels: {app: wildfire-vit}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: wildfire-vit}
+  template:
+    metadata:
+      labels: {app: wildfire-vit}
+      annotations:                      # picked up by annotation-based Prometheus scrape configs
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    spec:
+      # runtimeClassName: nvidia        # uncomment if your cluster needs it for GPU containers
+      tolerations:
+        - {key: nvidia.com/gpu, operator: Exists, effect: NoSchedule}
+      initContainers:
+        - name: build-engine            # builds the TensorRT engine on the GPU this pod landed on
+          image: wildfire-vit-trt:latest
+          imagePullPolicy: IfNotPresent
+          command: ["/app/build_engine.sh"]
+          resources:
+            limits: {nvidia.com/gpu: 1}
+          volumeMounts:
+            - {name: engine, mountPath: /engine}
+      containers:
+        - name: server
+          image: wildfire-vit-trt:latest
+          imagePullPolicy: IfNotPresent
+          args: ["/app/wildfire_service", "--engine", "/engine/vit_fp16.plan", "--contexts", "2"]
+          ports:
+            - {name: http, containerPort: 8080}
+            - {name: grpc, containerPort: 50051}
+          resources:
+            requests: {cpu: "2", memory: 4Gi}
+            limits: {nvidia.com/gpu: 1, memory: 8Gi}
+          volumeMounts:
+            - {name: engine, mountPath: /engine}
+          startupProbe:                  # allow time for CUDA init + engine load + warmup
+            httpGet: {path: /health, port: http}
+            periodSeconds: 2
+            failureThreshold: 60
+          readinessProbe:                # only receives traffic once warmed up
+            httpGet: {path: /ready, port: http}
+            periodSeconds: 5
+            failureThreshold: 2
+          livenessProbe:
+            httpGet: {path: /health, port: http}
+            periodSeconds: 10
+            failureThreshold: 3
+      terminationGracePeriodSeconds: 20
+      volumes:
+        - name: engine
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: wildfire-vit
+  labels: {app: wildfire-vit}
+spec:
+  selector: {app: wildfire-vit}
+  ports:
+    - {name: http, port: 8080, targetPort: http}
+    - {name: grpc, port: 50051, targetPort: grpc}

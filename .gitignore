@@ -1,0 +1,58 @@
+# --- Model weights and generated engines (large, machine/GPU-specific) ---
+*.pt
+*.pth
+*.safetensors
+*.ckpt
+*.onnx
+*.plan
+*.engine
+*.trt
+*.onnx.data
+service/model/
+
+# --- Scratch outputs from parity checks ---
+*_logits.txt
+results/scratch.jsonl
+
+# --- Local test images (keep a small sample if you want it in the repo) ---
+tile.png
+# !tile.png
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+.ipynb_checkpoints/
+.pytest_cache/
+*.egg-info/
+
+# --- C++ / CMake builds ---
+build/
+out/
+cmake-build-*/
+CMakeCache.txt
+CMakeFiles/
+*.obj
+*.o
+*.exe
+*.pdb
+*.ilk
+
+# --- Docker / Kubernetes local files ---
+.env
+*.tar
+kubeconfig*
+
+# --- Editors and OS ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- Secrets ---
+*.key
+*.pem
+.hf_token

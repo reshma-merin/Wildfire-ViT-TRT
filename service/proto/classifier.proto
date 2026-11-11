@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package wildfire;
+
+service Classifier {
+  // One encoded image (PNG/JPEG bytes) in, class scores out.
+  rpc Predict(PredictRequest) returns (PredictResponse);
+}
+
+message PredictRequest {
+  bytes image = 1;  // encoded PNG or JPEG
+}
+
+message PredictResponse {
+  repeated float logits = 1;
+  repeated float probabilities = 2;
+  int32 predicted_class = 3;
+  string predicted_label = 4;
+  double inference_ms = 5;  // H2D + TensorRT + D2H, excludes decode/preprocess
+}
