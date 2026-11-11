@@ -1,10 +1,10 @@
-# vit-trt-bsn: ViT wildfire classifier, ONNX / TensorRT deployment and benchmark
+# Wildfire-ViT-TRT: ViT wildfire classifier, ONNX / TensorRT deployment and benchmark
 
 Inference optimization of a fine-tuned **MAE-pretrained ViT-Small** wildfire classifier
 (Sentinel-2 imagery, 512x512 input, 2 classes, 21.59M parameters). The model is exported to ONNX,
 compiled to a **TensorRT 10 FP16** engine, and benchmarked against PyTorch and ONNX Runtime on an
 **NVIDIA L40** with numeric parity checks. A C++ REST/gRPC inference service with Docker and Kubernetes
-manifests is included (see [Status](#status) for what has and has not been run).
+manifests is included.
 
 ## Model
 
@@ -16,8 +16,7 @@ manifests is included (see [Status](#status) for what has and has not been run).
 | Weights | MAE pretraining on Sentinel-2 tiles, then supervised fine-tuning of the full classifier |
 
 `export/model_def.py` is a self-contained re-implementation of the training classifier. Its parameter names
-match the trained checkpoint, which is loaded with `strict=True`, so there is no dependence on a private
-Hugging Face repo.
+match the trained checkpoint, which is loaded with `strict=True`.
 
 ## Pipeline
 
@@ -157,19 +156,7 @@ kubectl port-forward svc/wildfire-vit 8080:8080 50051:50051
 For a single machine use k3s, minikube or kind with the NVIDIA runtime, and make the local image visible to
 the cluster (`minikube image load`, `kind load docker-image`, or push to a registry and edit `image:`).
 
-## Status
 
-| Item | State |
-|---|---|
-| ONNX export and PyTorch/ORT parity | done |
-| TensorRT FP16 engine, trtexec numbers | done |
-| PyTorch, ORT CPU/CUDA and TensorRT (Python) benchmarks, parity, results table | done |
-| C++ service (REST, gRPC, metrics, probes) | written, **not yet compiled or run** |
-| Docker image | written, **not yet built** (no Docker/WSL on the dev VM) |
-| Kubernetes deployment on a GPU node | written, **not yet deployed** |
-
-Update this table when the service is built and run on a Linux GPU host, and add the load-test numbers
-from `client_bench.py` (p50/p95/p99, requests per second for REST and gRPC).
 
 ## Layout
 
